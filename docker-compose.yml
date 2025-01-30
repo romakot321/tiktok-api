@@ -1,0 +1,26 @@
+services:
+  app:
+    build:
+      context: ./
+    container_name: tiktokanalyzer_app
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    restart: always
+    networks:
+      default:
+      global_network:
+
+  postgres:
+    image: postgres:latest
+    container_name: tiktokanalyzer_db
+    restart: always
+    env_file:
+      - .env
+    networks:
+      default:
+
+networks:
+  global_network:
+    external: true
