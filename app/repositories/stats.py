@@ -74,3 +74,11 @@ class StatsRepository(BaseRepository):
         query = delete(TrendHashtag)
         await self.session.execute(query)
 
+    async def get_trend_videos(self) -> list[TrendVideo]:
+        query = select(TrendVideo)
+        return list(await self.session.scalars(query))
+
+    async def get_trend_hashtags(self) -> list[TrendHashtag]:
+        query = select(TrendHashtag)
+        return list(await self.session.scalars(query))
+

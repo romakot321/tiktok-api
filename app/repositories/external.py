@@ -2,7 +2,6 @@ from aiohttp import ClientSession
 import os
 import json
 from loguru import logger
-from apify_client import ApifyClientAsync
 
 from app.schemas.external import ExternalDataSchema
 from app.schemas.external import ExternalTrendHashtagDataSchema, ExternalTrendVideoDataSchema
@@ -12,9 +11,6 @@ class ExternalRepository:
     url = "https://api.brightdata.com"
     token_header = {"Authorization": "Bearer " + os.getenv("EXTERNAL_TOKEN", "")}
     apify_token = os.getenv("APIFY_TOKEN")
-
-    def __init__(self):
-        self.apify_client = ApifyClientAsync(self.apify_token)
 
     async def trigger_data_collect(self, nicknames: list[str]) -> str:
         """Return task_id from external api"""
@@ -60,10 +56,4 @@ class ExternalRepository:
         logger.debug(f"Loaded {len(data)} videos")
         return [ExternalTrendVideoDataSchema.model_validate(row) for row in data]
 
-
-if __name__ == '__main__':
-    import asyncio
-    rep = ExternalRepository()
-    list_items_result = asyncio.run(rep.get_trend_hashtags_data())
-    logger.debug(f'Dataset: {list_items_result}')
 

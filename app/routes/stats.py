@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/stats", tags=["Stats"])
 
 
 @router.get(
-    "{nickname}/current",
+    "/{nickname}/current",
     response_model=StatsSchema,
     dependencies=[Depends(validate_api_token)]
 )
@@ -21,7 +21,7 @@ async def get_current_stats(
 
 
 @router.get(
-    "{nickname}/increase",
+    "/{nickname}/increase",
     response_model=StatsUserSchema,
     dependencies=[Depends(validate_api_token)]
 )
@@ -34,7 +34,7 @@ async def get_increase_stats(
 
 
 @router.get(
-    "trend/video",
+    "/trend/video",
     response_model=list[StatsTrendVideoSchema],
     dependencies=[Depends(validate_api_token)]
 )
@@ -45,7 +45,7 @@ async def get_trend_videos(
 
 
 @router.get(
-    "trend/hashtag",
+    "/trend/hashtag",
     response_model=list[StatsTrendHashtagSchema],
     dependencies=[Depends(validate_api_token)]
 )

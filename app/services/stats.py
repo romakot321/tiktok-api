@@ -10,7 +10,7 @@ from app.schemas.stats import StatsUserSchema, StatsSchema
 from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema
 from app.schemas.external import ExternalDataSchema
 from app.db.base import get_session
-from app.db.tables import UserStats, VideoStats
+from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag
 
 
 class StatsService:
@@ -51,13 +51,14 @@ class StatsService:
             created_at=now
         )
         await self.stats_repository.store_user(user_stats, do_commit=False)
-        videos = [
-            VideoStats(video_id=schema.video_id, views=schema.playcount, comments=schema.commentcount,
-                       diggs=schema.diggcount, shares=schema.share_count, nickname=stats.account_id,
-                       created_at=now)
-            for schema in stats.top_videos
-        ]
-        [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
+        if stats.top_videos is not None:
+            videos = [
+                VideoStats(video_id=schema.video_id, views=schema.playcount, comments=schema.commentcount,
+                        diggs=schema.diggcount, shares=schema.share_count, nickname=stats.account_id,
+                        created_at=now)
+                for schema in stats.top_videos
+            ]
+            [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
         await self.stats_repository.commit()
 
     async def _load_trend_video(self):
