@@ -7,7 +7,7 @@ from app.repositories.external import ExternalRepository
 from app.repositories.stats import StatsRepository
 from app.repositories.user import UserRepository
 from app.schemas.stats import StatsUserSchema, StatsSchema
-from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema
+from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema, StatsTrendSongSchema
 from app.schemas.external import ExternalDataSchema
 from app.db.base import get_session
 from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag
@@ -39,6 +39,10 @@ class StatsService:
     async def get_trend_hashtags(self) -> list[StatsTrendHashtagSchema]:
         models = await self.stats_repository.get_trend_hashtags()
         return [StatsTrendHashtagSchema.model_validate(model) for model in models]
+
+    async def get_trend_songs(self) -> list[StatsTrendSongSchema]:
+        models = await self.stats_repository.get_trend_songs()
+        return [StatsTrendSongSchema.model_validate(model) for model in models]
 
     async def _save_stats(self, stats: ExternalDataSchema):
         now = dt.datetime.now()
@@ -80,6 +84,15 @@ class StatsService:
         [await self.stats_repository.store_trend_hashtag(model, do_commit=False) for model in models]
         await self.stats_repository.commit()
 
+    async def _load_trend_songs(self):
+        songs = await self.external_repository.get_trend_songs_data()
+        models = [
+            TrendSong(cover_url=song.cover, song_url=song.link, title=song.title, author=song.author)
+            for song in songs
+        ]
+        [await self.stats_repository.store_trend_song(model, do_commit=False) for model in models]
+        await self.stats_repository.commit()
+
     @classmethod
     async def load_user_stats(cls, nickname: str):
         session_getter = get_session()
@@ -117,8 +130,10 @@ class StatsService:
 
         await self.stats_repository.clear_trend_videos()
         await self.stats_repository.clear_trend_hashtags()
+        await self.stats_repository.clear_trend_songs()
         await self._load_trend_video()
         await self._load_trend_hashtags()
+        await self._load_trend_songs()
 
         try:
             await anext(session_getter)

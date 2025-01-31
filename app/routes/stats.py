@@ -3,7 +3,7 @@ from fastapi import APIRouter, Query, Depends
 from . import validate_api_token
 from app.services.stats import StatsService
 from app.schemas.stats import StatsUserSchema, StatsSchema
-from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema
+from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema, StatsTrendSongSchema
 
 router = APIRouter(prefix="/api/stats", tags=["Stats"])
 
@@ -53,3 +53,15 @@ async def get_trend_hashtags(
         service: StatsService = Depends()
 ):
     return await service.get_trend_hashtags()
+
+
+@router.get(
+    "/trend/song",
+    response_model=list[StatsTrendSongSchema],
+    dependencies=[Depends(validate_api_token)]
+)
+async def get_trend_songs(
+        service: StatsService = Depends()
+):
+    return await service.get_trend_songs()
+

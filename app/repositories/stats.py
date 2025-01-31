@@ -4,7 +4,7 @@ import datetime as dt
 
 from .base import BaseRepository
 from app.db.tables import UserStats, VideoStats
-from app.db.tables import TrendVideo, TrendHashtag
+from app.db.tables import TrendVideo, TrendHashtag, TrendSong
 
 
 class Stats(BaseModel):
@@ -66,6 +66,11 @@ class StatsRepository(BaseRepository):
         if do_commit:
             await self.commit()
 
+    async def store_trend_song(self, model: TrendSong, do_commit=True):
+        self.session.add(model)
+        if do_commit:
+            await self.commit()
+
     async def clear_trend_videos(self):
         query = delete(TrendVideo)
         await self.session.execute(query)
@@ -74,11 +79,19 @@ class StatsRepository(BaseRepository):
         query = delete(TrendHashtag)
         await self.session.execute(query)
 
+    async def clear_trend_songs(self):
+        query = delete(TrendSong)
+        await self.session.execute(query)
+
     async def get_trend_videos(self) -> list[TrendVideo]:
         query = select(TrendVideo)
         return list(await self.session.scalars(query))
 
     async def get_trend_hashtags(self) -> list[TrendHashtag]:
         query = select(TrendHashtag)
+        return list(await self.session.scalars(query))
+
+    async def get_trend_songs(self) -> list[TrendSong]:
+        query = select(TrendSong)
         return list(await self.session.scalars(query))
 

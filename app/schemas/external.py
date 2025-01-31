@@ -62,3 +62,10 @@ class ExternalTrendHashtagDataSchema(BaseModel):
     hashtag_name: str
     video_views: int
 
+
+class ExternalTrendSongDataSchema(BaseModel):
+    cover: str
+    link: str
+    title: str
+    author: str
+

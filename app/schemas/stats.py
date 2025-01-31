@@ -48,3 +48,13 @@ class StatsTrendHashtagSchema(BaseModel):
     views: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class StatsTrendSongSchema(BaseModel):
+    cover_url: str
+    song_url: str
+    title: str
+    author: str
+
+    model_config = ConfigDict(from_attributes=True)
+

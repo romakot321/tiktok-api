@@ -56,4 +56,13 @@ class ExternalRepository:
         logger.debug(f"Loaded {len(data)} videos")
         return [ExternalTrendVideoDataSchema.model_validate(row) for row in data]
 
+    async def get_trend_songs_data(self) -> list[ExternalTrendVideoDataSchema]:
+        async with ClientSession() as session:
+            resp = await session.post(
+                f"https://api.apify.com/v2/acts/lexis-solutions~tiktok-trending-songs-scraper/run-sync-get-dataset-items?token={self.apify_token}",
+                json={ "maxItems": 20, "countryCode": "US", "period": "7" }
+            )
+            data = await resp.json()
+        logger.debug(f"Loaded {len(data)} songs")
+        return [ExternalTrendSongDataSchema.model_validate(row) for row in data]
 

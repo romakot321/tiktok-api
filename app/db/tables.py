@@ -40,6 +40,7 @@ class User(BaseMixin, Base):
     nickname: M[str] = column(index=True, unique=True)
     app_id: M[str] = column(primary_key=True)
     app_bundle: M[str]
+    avatar: M[str]
 
     stats: M[list['UserStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
     video_stats: M[list['VideoStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
@@ -79,4 +80,11 @@ class TrendVideo(BaseMixin, Base):
 class TrendHashtag(BaseMixin, Base):
     name: M[str]
     views: M[int]
+
+
+class TrendSong(BaseMixin, Base):
+    cover_url: M[str]
+    song_url: M[str]
+    title: M[str]
+    author: M[str]
 
