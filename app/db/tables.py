@@ -44,7 +44,7 @@ class User(BaseMixin, Base):
     stats: M[list['UserStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
     video_stats: M[list['VideoStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
     __table_args__ = (
-        UniqueConstraint('app_id', 'app_bundle', name='uix_externalid_appbundle'),
+        UniqueConstraint('app_id', 'nickname', name='uix_externalid_appbundle'),
     )
 
 

@@ -27,6 +27,7 @@ class ExternalDataSchema(BaseModel):
     likes: int
     videos_count: int
     digg_count: int
+    profile_pic_url_hd: str
     top_videos: list[ExternalVideoDataSchema]
 
     @model_validator(mode="before")

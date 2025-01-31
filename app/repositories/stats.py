@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import datetime as dt
 
 from .base import BaseRepository
@@ -7,8 +7,10 @@ from app.db.tables import UserStats, VideoStats
 
 
 class Stats(BaseModel):
-    user: UserStats
-    video: list[VideoStats]
+    user_stats: UserStats
+    video_stats: list[VideoStats]
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class StatsRepository(BaseRepository):
@@ -21,7 +23,7 @@ class StatsRepository(BaseRepository):
             return None
         query = select(VideoStats).filter_by(nickname=nickname, created_at=user_stats.created_at)
         video_stats = await self.session.scalars(query)
-        return Stats(user=user_stats, video=list(video_stats))
+        return Stats(user_stats=user_stats, video_stats=list(video_stats))
 
     async def get_increase(self, nickname: str, days: int) -> dict:
         ago = (dt.datetime.now() - dt.timedelta(days=days))
