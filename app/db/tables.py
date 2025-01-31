@@ -68,3 +68,15 @@ class VideoStats(BaseMixin, Base):
 
     user: M['User'] = relationship(back_populates='video_stats', lazy='noload')
 
+
+class TrendVideo(BaseMixin, Base):
+    cover_url: M[str]
+    views: M[int]
+    description: M[str]
+    video_url: M[str]
+
+
+class TrendHashtag(BaseMixin, Base):
+    name: M[str]
+    views: M[int]
+

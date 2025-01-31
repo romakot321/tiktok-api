@@ -2,13 +2,19 @@ from aiohttp import ClientSession
 import os
 import json
 from loguru import logger
+from apify_client import ApifyClientAsync
 
 from app.schemas.external import ExternalDataSchema
+from app.schemas.external import ExternalTrendHashtagDataSchema, ExternalTrendVideoDataSchema
 
 
 class ExternalRepository:
     url = "https://api.brightdata.com"
-    token_header = {"Authorization": "Bearer " + os.getenv("EXTERNAL_TOKEN")}
+    token_header = {"Authorization": "Bearer " + os.getenv("EXTERNAL_TOKEN", "")}
+    apify_token = os.getenv("APIFY_TOKEN")
+
+    def __init__(self):
+        self.apify_client = ApifyClientAsync(self.apify_token)
 
     async def trigger_data_collect(self, nicknames: list[str]) -> str:
         """Return task_id from external api"""
@@ -33,4 +39,31 @@ class ExternalRepository:
             data = await resp.json()
         logger.debug("Data collected")
         return [ExternalDataSchema.model_validate(i) for i in data]
+
+    async def get_trend_hashtags_data(self) -> list[ExternalTrendHashtagDataSchema]:
+        async with ClientSession() as session:
+            resp = await session.post(
+                f"https://api.apify.com/v2/acts/lexis-solutions~tiktok-trending-hashtags-scraper/run-sync-get-dataset-items?token={self.apify_token}",
+                json={ "countryCode": "US", "maxItems": 30, "period": "7" }
+            )
+            data = await resp.json()
+        logger.debug(f"Loaded {len(data)} hashtags")
+        return [ExternalTrendHashtagDataSchema.model_validate(row) for row in data]
+
+    async def get_trend_videos_data(self) -> list[ExternalTrendVideoDataSchema]:
+        async with ClientSession() as session:
+            resp = await session.post(
+                f"https://api.apify.com/v2/acts/novi~fast-tiktok-api/run-sync-get-dataset-items?token={self.apify_token}",
+                json={"isUnlimited": False, "limit": 2, "proxyConfiguration": {"useApifyProxy": False}, "publishTime": "ALL_TIME", "sortType": 0, "type": "TREND"}
+            )
+            data = await resp.json()
+        logger.debug(f"Loaded {len(data)} videos")
+        return [ExternalTrendVideoDataSchema.model_validate(row) for row in data]
+
+
+if __name__ == '__main__':
+    import asyncio
+    rep = ExternalRepository()
+    list_items_result = asyncio.run(rep.get_trend_hashtags_data())
+    logger.debug(f'Dataset: {list_items_result}')
 

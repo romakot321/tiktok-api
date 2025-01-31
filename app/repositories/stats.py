@@ -1,9 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from pydantic import BaseModel
 import datetime as dt
 
 from .base import BaseRepository
 from app.db.tables import UserStats, VideoStats
+from app.db.tables import TrendVideo, TrendHashtag
 
 
 class Stats(BaseModel):
@@ -52,4 +53,22 @@ class StatsRepository(BaseRepository):
         self.session.add(model)
         if do_commit:
             await self.commit()
+
+    async def store_trend_video(self, model: TrendVideo, do_commit=True):
+        self.session.add(model)
+        if do_commit:
+            await self.commit()
+
+    async def store_trend_hashtag(self, model: TrendHashtag, do_commit=True):
+        self.session.add(model)
+        if do_commit:
+            await self.commit()
+
+    async def clear_trend_videos(self):
+        query = delete(TrendVideo)
+        await self.session.execute(query)
+
+    async def clear_trend_hashtags(self):
+        query = delete(TrendHashtag)
+        await self.session.execute(query)
 

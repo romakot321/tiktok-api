@@ -40,3 +40,24 @@ class ExternalDataSchema(BaseModel):
             state[key] = value
         return state
 
+
+class ExternalTrendVideoDataSchema(BaseModel):
+    class VideoSchema(BaseModel):
+        class VideoCoverSchema(BaseModel):
+            url_list: list[str]
+
+        cover: VideoCoverSchema
+
+    class StatisticsSchema(BaseModel):
+        play_count: int
+
+    desc: str
+    share_url: str
+    statistics: StatisticsSchema
+    video: VideoSchema
+
+
+class ExternalTrendHashtagDataSchema(BaseModel):
+    hashtag_name: str
+    video_views: int
+

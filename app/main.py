@@ -40,7 +40,7 @@ def register_cors(application):
     )
 
 
-@repeat_every(seconds=6 * 60 * 60)
+@repeat_every(seconds=12 * 60 * 60)
 async def update_user_stats():
     try:
         await StatsService.update_stats()
