@@ -2,14 +2,14 @@ from fastapi import APIRouter, Query, Depends
 
 from . import validate_api_token
 from app.services.stats import StatsService
-from app.schemas.stats import StatsUserSchema
+from app.schemas.stats import StatsUserSchema, StatsSchema
 
 router = APIRouter(prefix="/api/stats", tags=["Stats"])
 
 
 @router.get(
     "{nickname}/current",
-    response_model=StatsUserSchema,
+    response_model=StatsSchema,
     dependencies=[Depends(validate_api_token)]
 )
 async def get_current_stats(

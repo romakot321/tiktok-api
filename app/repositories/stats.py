@@ -1,16 +1,27 @@
 from sqlalchemy import select
+from pydantic import BaseModel
 import datetime as dt
 
 from .base import BaseRepository
 from app.db.tables import UserStats, VideoStats
 
 
+class Stats(BaseModel):
+    user: UserStats
+    video: list[VideoStats]
+
+
 class StatsRepository(BaseRepository):
     base_table = UserStats
 
-    async def get_latest(self, nickname: str) -> UserStats | None:
+    async def get_latest(self, nickname: str) -> Stats | None:
         query = select(UserStats).order_by(UserStats.created_at.desc()).filter_by(nickname=nickname).limit(1)
-        return await self.session.scalar(query)
+        user_stats = await self.session.scalar(query)
+        if user_stats is None:
+            return None
+        query = select(VideoStats).filter_by(nickname=nickname, created_at=user_stats.created_at)
+        video_stats = await self.session.scalars(query)
+        return Stats(user=user_stats, video=list(video_stats))
 
     async def get_increase(self, nickname: str, days: int) -> dict:
         ago = (dt.datetime.now() - dt.timedelta(days=days))

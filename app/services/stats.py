@@ -1,11 +1,12 @@
 from fastapi import Depends, HTTPException
 import asyncio
+import datetime as dt
 from loguru import logger
 
 from app.repositories.external import ExternalRepository
 from app.repositories.stats import StatsRepository
 from app.repositories.user import UserRepository
-from app.schemas.stats import StatsUserSchema
+from app.schemas.stats import StatsUserSchema, StatsSchema
 from app.schemas.external import ExternalDataSchema
 from app.db.base import get_session
 from app.db.tables import UserStats, VideoStats
@@ -21,27 +22,30 @@ class StatsService:
         self.stats_repository = stats_repository
 
     async def get_current(self, nickname: str) -> StatsUserSchema:
-        model = await self.stats_repository.get_latest(nickname)
-        if model is None:
+        stats = await self.stats_repository.get_latest(nickname)
+        if stats is None:
             raise HTTPException(404)
-        return StatsUserSchema.model_validate(model)
+        return StatsSchema.model_validate(stats)
 
     async def get_increase(self, nickname: str, days: int) -> StatsUserSchema:
         model = await self.stats_repository.get_increase(nickname, days)
         return StatsUserSchema.model_validate(model)
 
     async def _save_stats(self, stats: ExternalDataSchema):
+        now = dt.datetime.now()
         user_stats = UserStats(
             followers=stats.followers,
             following=stats.following,
             likes=stats.likes,
             diggs=stats.digg_count,
-            nickname=stats.account_id
+            nickname=stats.account_id,
+            created_at=now
         )
         await self.stats_repository.store_user(user_stats, do_commit=False)
         videos = [
             VideoStats(video_id=schema.video_id, views=schema.playcount, comments=schema.commentcount,
-                       diggs=schema.diggcount, shares=schema.share_count, nickname=stats.account_id)
+                       diggs=schema.diggcount, shares=schema.share_count, nickname=stats.account_id,
+                       created_at=now)
             for schema in stats.top_videos
         ]
         [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
