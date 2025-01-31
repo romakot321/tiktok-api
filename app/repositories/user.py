@@ -8,7 +8,7 @@ class UserRepository(BaseRepository):
     base_table = User
 
     async def store(self, model: User) -> User:
-        return await self._create(model, mute_conflict_exception=True)
+        return await self._create(model)
 
     async def list(self) -> list[User]:
         query = select(self.base_table)

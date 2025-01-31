@@ -80,6 +80,24 @@ class StatsService:
         await self.stats_repository.commit()
 
     @classmethod
+    async def load_user_stats(cls, nickname: str):
+        session_getter = get_session()
+        db_session = await anext(session_getter)
+        self = cls(external_repository=ExternalRepository(), stats_repository=StatsRepository(session=db_session))
+
+        task_id = await self.external_repository.trigger_data_collect([nickname])
+
+        while (data := await self.external_repository.get_collected_data(task_id)) == None:
+            await asyncio.sleep(10)
+        [await self._save_stats(stats) for stats in data]
+        logger.debug(f"Add {len(data)} stats")
+
+        try:
+            await anext(session_getter)
+        except StopAsyncIteration:
+            pass
+
+    @classmethod
     async def update_stats(cls):
         session_getter = get_session()
         db_session = await anext(session_getter)

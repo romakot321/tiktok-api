@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 
 from . import validate_api_token
 from app.services.user import UserService
+from app.services.stats import StatsService
 from app.schemas.user import UserSchema, UserCreateSchema
 
 router = APIRouter(prefix="/api/user", tags=["User"])
@@ -14,7 +15,10 @@ router = APIRouter(prefix="/api/user", tags=["User"])
 )
 async def store_user(
         schema: UserCreateSchema,
+        background_tasks: BackgroundTasks,
         service: UserService = Depends()
 ):
-    return await service.create(**schema.model_dump())
+    user = await service.create(**schema.model_dump())
+    background_tasks.add_task(StatsService.load_user_stats, schema.nickname)
+    return user
 
