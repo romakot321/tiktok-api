@@ -18,3 +18,7 @@ class UserService:
         model = await self.user_repository.store(model)
         return UserSchema.model_validate(model)
 
+    async def get(self, nickname: str) -> UserSchema:
+        model = await self.user_repository.get_by_nickname(nickname)
+        return UserSchema.model_validate(model)
+
