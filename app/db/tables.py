@@ -40,7 +40,7 @@ class User(BaseMixin, Base):
     nickname: M[str] = column(index=True, unique=True)
     app_id: M[str] = column(primary_key=True)
     app_bundle: M[str]
-    avatar: M[str]
+    avatar: M[str | None] = column(nullable=True)
 
     stats: M[list['UserStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
     video_stats: M[list['VideoStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
@@ -66,6 +66,8 @@ class VideoStats(BaseMixin, Base):
     diggs: M[int]
     shares: M[int]
     nickname: M[str] = column(ForeignKey('users.nickname', ondelete="CASCADE"))
+    cover_url: M[str]
+    video_url: M[str]
 
     user: M['User'] = relationship(back_populates='video_stats', lazy='noload')
 

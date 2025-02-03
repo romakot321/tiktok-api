@@ -3,8 +3,8 @@ import os
 import json
 from loguru import logger
 
-from app.schemas.external import ExternalDataSchema
 from app.schemas.external import ExternalTrendHashtagDataSchema, ExternalTrendVideoDataSchema, ExternalTrendSongDataSchema
+from app.schemas.external import ExternalDataSchema, ExternalVideoDataSchema
 
 
 class ExternalRepository:
@@ -12,7 +12,7 @@ class ExternalRepository:
     token_header = {"Authorization": "Bearer " + os.getenv("EXTERNAL_TOKEN", "")}
     apify_token = os.getenv("APIFY_TOKEN")
 
-    async def trigger_data_collect(self, nicknames: list[str]) -> str:
+    async def trigger_user_data_collect(self, nicknames: list[str]) -> str:
         """Return task_id from external api"""
         async with ClientSession(base_url=self.url, headers=self.token_header) as session:
             resp = await session.post(
@@ -24,7 +24,7 @@ class ExternalRepository:
             logger.debug("Triggered collect: " + str(data))
             return data['snapshot_id']
 
-    async def get_collected_data(self, task_id: str) -> list[ExternalDataSchema] | None:
+    async def get_collected_user_data(self, task_id: str) -> list[ExternalDataSchema] | None:
         async with ClientSession(base_url=self.url, headers=self.token_header) as session:
             resp = await session.get(
                 f'/datasets/v3/snapshot/{task_id}?format=json'
@@ -33,8 +33,32 @@ class ExternalRepository:
                 return
             assert resp.status == 200, await resp.text()
             data = await resp.json()
-        logger.debug("Data collected")
+        logger.debug("User data collected")
         return [ExternalDataSchema.model_validate(i) for i in data]
+
+    async def trigger_video_data_collect(self, nickname: list[str]) -> str:
+        """Return task_id from external api"""
+        async with ClientSession(base_url=self.url, headers=self.token_header) as session:
+            resp = await session.post(
+                '/datasets/v3/trigger?dataset_id=gd_l1villgoiiidt09ci&include_errors=true',
+                json={"url": 'https://www.tiktok.com/@' + name}
+            )
+            assert resp.status == 200, await resp.text()
+            data = await resp.json()
+            logger.debug("Triggered video collect: " + str(data))
+            return data['snapshot_id']
+
+    async def get_collected_video_data(self, task_id: str) -> list[ExternalVideoDataSchema] | None:
+        async with ClientSession(base_url=self.url, headers=self.token_header) as session:
+            resp = await session.get(
+                f'/datasets/v3/snapshot/{task_id}?format=json'
+            )
+            if resp.status == 202:
+                return
+            assert resp.status == 200, await resp.text()
+            data = await resp.json()
+        logger.debug("Video data collected")
+        return [ExternalVideoDataSchema.model_validate(i) for i in data]
 
     async def get_trend_hashtags_data(self) -> list[ExternalTrendHashtagDataSchema]:
         async with ClientSession() as session:

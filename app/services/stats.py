@@ -17,10 +17,12 @@ class StatsService:
     def __init__(
             self,
             external_repository: ExternalRepository = Depends(),
-            stats_repository: StatsRepository = Depends()
+            stats_repository: StatsRepository = Depends(),
+            user_repository: UserRepository = Depends()
     ):
         self.external_repository = external_repository
         self.stats_repository = stats_repository
+        self.user_repository = user_repository
 
     async def get_current(self, nickname: str) -> StatsUserSchema:
         stats = await self.stats_repository.get_latest(nickname)
@@ -44,25 +46,31 @@ class StatsService:
         models = await self.stats_repository.get_trend_songs()
         return [StatsTrendSongSchema.model_validate(model) for model in models]
 
-    async def _save_stats(self, stats: ExternalDataSchema):
-        now = dt.datetime.now()
+    async def _save_user_stats(self, stats: ExternalDataSchema, created_at: dt.datetime):
         user_stats = UserStats(
             followers=stats.followers,
             following=stats.following,
             likes=stats.likes,
             diggs=stats.digg_count,
             nickname=stats.account_id,
-            created_at=now
+            created_at=created_at
         )
-        await self.stats_repository.store_user(user_stats, do_commit=False)
-        if stats.top_videos is not None:
-            videos = [
-                VideoStats(video_id=schema.video_id, views=schema.playcount, comments=schema.commentcount,
-                        diggs=schema.diggcount, shares=schema.share_count, nickname=stats.account_id,
-                        created_at=now)
-                for schema in stats.top_videos
-            ]
-            [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
+        await self.stats_repository.store_user(user_stats)
+        await self.user_repository.update_avatar(stats.account_id, stats.profile_pic_url_hd)
+
+    async def _load_video_stats(self, nickname: str, created_at: dt.datetime):
+        task_id = await self.external_repository.trigger_video_data_collect(nickname)
+        while (data := await self.external_repository.get_collected_video_data(task_id)) == None:
+            await asyncio.sleep(2)
+        if data is None:
+            return
+        videos = [
+            VideoStats(video_id=schema.post_id, views=schema.play_count, comments=schema.comment_count,
+                       diggs=schema.digg_count, shares=schema.share_count, nickname=nickname,
+                       created_at=created_at, cover_url=schema.preview_image, video_url=schema.video_url)
+            for schema in data
+        ]
+        [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
         await self.stats_repository.commit()
 
     async def _load_trend_video(self):
@@ -99,11 +107,13 @@ class StatsService:
         db_session = await anext(session_getter)
         self = cls(external_repository=ExternalRepository(), stats_repository=StatsRepository(session=db_session))
 
-        task_id = await self.external_repository.trigger_data_collect([nickname])
+        task_id = await self.external_repository.trigger_user_data_collect([nickname])
 
-        while (data := await self.external_repository.get_collected_data(task_id)) == None:
+        while (data := await self.external_repository.get_collected_user_data(task_id)) == None:
             await asyncio.sleep(10)
-        [await self._save_stats(stats) for stats in data]
+        now = dt.datetime.now()
+        [await self._save_user_stats(stats, now) for stats in data]
+        await self._load_video_stats(nickname, now)
         logger.debug(f"Add {len(data)} stats")
 
         try:
@@ -115,18 +125,23 @@ class StatsService:
     async def update_stats(cls):
         session_getter = get_session()
         db_session = await anext(session_getter)
-        user_repository = UserRepository(session=db_session)
-        self = cls(external_repository=ExternalRepository(), stats_repository=StatsRepository(session=db_session))
+        self = cls(
+                external_repository=ExternalRepository(),
+                stats_repository=StatsRepository(session=db_session),
+                user_repository=UserRepository(session=db_session)
+        )
 
-        users = await user_repository.list()
+        users = await self.user_repository.list()
         if users:
             nicknames = [user.nickname for user in users]
-            task_id = await self.external_repository.trigger_data_collect(nicknames)
+            task_id = await self.external_repository.trigger_user_data_collect(nicknames)
 
-            while (data := await self.external_repository.get_collected_data(task_id)) == None:
+            while (data := await self.external_repository.get_collected_user_data(task_id)) == None:
                 await asyncio.sleep(10)
-            [await self._save_stats(stats) for stats in data]
-            logger.debug(f"Add {len(data)} stats")
+            now = dt.datetime.now()
+            [await self._save_user_stats(stats, now) for stats in data]
+            [await self._load_video_stats(nickname, now) for nickname in nicknames]
+            logger.debug(f"Add {len(data)} user stats")
 
         await self.stats_repository.clear_trend_videos()
         await self.stats_repository.clear_trend_hashtags()
