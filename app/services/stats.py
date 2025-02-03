@@ -10,7 +10,7 @@ from app.schemas.stats import StatsUserSchema, StatsSchema
 from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema, StatsTrendSongSchema
 from app.schemas.external import ExternalDataSchema
 from app.db.base import get_session
-from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag
+from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag, TrendSong
 
 
 class StatsService:

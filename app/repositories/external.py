@@ -4,7 +4,7 @@ import json
 from loguru import logger
 
 from app.schemas.external import ExternalDataSchema
-from app.schemas.external import ExternalTrendHashtagDataSchema, ExternalTrendVideoDataSchema
+from app.schemas.external import ExternalTrendHashtagDataSchema, ExternalTrendVideoDataSchema, ExternalTrendSongDataSchema
 
 
 class ExternalRepository:
