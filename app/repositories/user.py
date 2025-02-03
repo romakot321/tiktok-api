@@ -15,3 +15,7 @@ class UserRepository(BaseRepository):
         query = query.order_by(self.base_table.id.desc())
         return list(await self.session.scalars(query))
 
+    async def update_avatar(self, nickname: str, avatar: str):
+        user = await self._get_one(nickname=nickname)
+        await self._update_obj(user, avatar=avatar)
+

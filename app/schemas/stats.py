@@ -20,11 +20,8 @@ class StatsVideoSchema(BaseModel):
     diggs: int
     shares: int
     nickname: str
-
-    @computed_field
-    @property
-    def video_url(self) -> str:
-        return f"https://www.tiktok.com/@{self.nickname}/video/{self.video_id}"
+    video_url: str
+    cover_url: str
 
     model_config = ConfigDict(from_attributes=True)
 

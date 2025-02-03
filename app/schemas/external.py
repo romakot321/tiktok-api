@@ -2,11 +2,13 @@ from pydantic import BaseModel, model_validator, AliasChoices, Field
 
 
 class ExternalVideoDataSchema(BaseModel):
-    video_id: str
-    playcount: int
-    commentcount: int
-    diggcount: int
+    post_id: str
+    play_count: int
+    comment_count: int
+    digg_count: int
     share_count: int
+    preview_image: str
+    video_url: str
 
     @model_validator(mode="before")
     @classmethod
@@ -28,7 +30,6 @@ class ExternalDataSchema(BaseModel):
     videos_count: int
     digg_count: int
     profile_pic_url_hd: str
-    top_videos: list[ExternalVideoDataSchema] | None = None
 
     @model_validator(mode="before")
     @classmethod
