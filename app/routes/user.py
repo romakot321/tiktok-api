@@ -22,3 +22,14 @@ async def store_user(
     background_tasks.add_task(StatsService.load_user_stats, schema.nickname)
     return user
 
+
+@router.get(
+    "/{nickname}",
+    response_model=UserSchema,
+    dependencies=[Depends(validate_api_token)]
+)
+async def get_user(
+        nickname: str,
+        service: UserService = Depends()
+):
+    return await service.get(nickname)
