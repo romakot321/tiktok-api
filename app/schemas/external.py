@@ -2,13 +2,20 @@ from pydantic import BaseModel, model_validator, AliasChoices, Field
 
 
 class ExternalVideoDataSchema(BaseModel):
-    post_id: str
-    play_count: int
-    comment_count: int
-    digg_count: int
-    share_count: int
-    preview_image: str
-    video_url: str
+    class VideoMeta(BaseModel):
+        originalCoverUrl: str
+
+    class AuthorMeta(BaseModel):
+        name: str
+
+    id: str
+    playCount: int
+    commentCount: int
+    diggCount: int
+    shareCount: int
+    mediaUrls: list[str]
+    videoMeta: VideoMeta
+    authorMeta: AuthorMeta
 
     @model_validator(mode="before")
     @classmethod
@@ -23,24 +30,33 @@ class ExternalVideoDataSchema(BaseModel):
 
 
 class ExternalDataSchema(BaseModel):
-    account_id: str
-    followers: int
-    following: int
-    likes: int
-    videos_count: int
-    digg_count: int
-    profile_pic_url_hd: str
+    class Data(BaseModel):
+        class Stats(BaseModel):
+            followerCount: int
+            followingCount: int
+            heartCount: int
+            videoCount: int
+            diggCount: int
 
-    @model_validator(mode="before")
-    @classmethod
-    def strip_keys(cls, state) -> dict:
-        if not isinstance(state, dict):
+        class User(BaseModel):
+            avatarMedium: str
+            uniqueId: str
+
+        user: User
+        stats: Stats
+
+        @model_validator(mode="before")
+        @classmethod
+        def strip_keys(cls, state) -> dict:
+            if not isinstance(state, dict):
+                return state
+            for key, value in state.items():
+                if isinstance(key, str):
+                    key = key.strip(' ')
+                state[key] = value
             return state
-        for key, value in state.items():
-            if isinstance(key, str):
-                key = key.strip(' ')
-            state[key] = value
-        return state
+
+    userInfo: Data
 
 
 class ExternalTrendVideoDataSchema(BaseModel):

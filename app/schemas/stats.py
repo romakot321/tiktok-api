@@ -30,6 +30,8 @@ class StatsSchema(BaseModel):
     user_stats: StatsUserSchema
     video_stats: list[StatsVideoSchema]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class StatsTrendVideoSchema(BaseModel):
     cover_url: str
