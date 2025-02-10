@@ -22,7 +22,7 @@ async def get_current_stats(
 
 @router.get(
     "/{nickname}/increase",
-    response_model=StatsUserSchema,
+    response_model=StatsSchema,
     dependencies=[Depends(validate_api_token)]
 )
 async def get_increase_stats(
