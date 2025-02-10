@@ -27,6 +27,61 @@ class StatsRepository(BaseRepository):
         return Stats(user_stats=user_stats, video_stats=list(video_stats))
 
     async def get_increase(self, nickname: str, days: int) -> dict:
+        return {
+            "user_stats": await self.get_increase_user(nickname, days),
+            "video_stats": await self.get_increase_video(nickname, days),
+        }
+
+    async def get_increase_video(self, nickname: str, days: int) -> dict:
+        first_record_subquery = (
+            select(
+                VideoStats.video_id,
+                VideoStats.views,
+                VideoStats.comments,
+                VideoStats.diggs,
+                VideoStats.shares,
+                func.row_number().over(partition_by=VideoStats.video_id, order_by=VideoStats.created_at).label('rn')
+            )
+            .where(VideoStats.created_at < func.now() - func.interval(f'{days} days'))
+            .where(VideoStats.nickname == nickname)
+        ).subquery()
+
+        latest_record_subquery = (
+            select(
+                VideoStats.video_id,
+                VideoStats.views,
+                VideoStats.comments,
+                VideoStats.diggs,
+                VideoStats.shares,
+                VideoStats.video_url,
+                VideoStats.cover_url,
+                VideoStats.nickname,
+                func.row_number().over(partition_by=VideoStats.video_id, order_by=VideoStats.created_at.desc()).label('rn')
+            )
+            .where(VideoStats.nickname == nickname)
+        ).subquery()
+
+        final_query = (
+            select(
+                latest_record_subquery.c.video_id,
+                latest_record_subquery.c.video_url,
+                latest_record_subquery.c.cover_url,
+                latest_record_subquery.c.nickname,
+                (latest_record_subquery.c.views - first_record_subquery.c.views).label('views'),
+                (latest_record_subquery.c.comments - first_record_subquery.c.comments).label('comments'),
+                (latest_record_subquery.c.diggs - first_record_subquery.c.diggs).label('diggs'),
+                (latest_record_subquery.c.shares - first_record_subquery.c.shares).label('shares'),
+            )
+            .join(first_record_subquery, latest_record_subquery.c.video_id == first_record_subquery.c.video_id)
+            .where(latest_record_subquery.c.rn == 1)
+            .where(first_record_subquery.c.rn == 1)
+        )
+        results = await self.session.scalars(final_query)
+        print([i.__dict__ for i in results])
+
+        return results
+
+    async def get_increase_user(self, nickname: str, days: int) -> dict:
         ago = (dt.datetime.now() - dt.timedelta(days=days))
         ago = ago.replace(hour=0, minute=0, second=0)
 

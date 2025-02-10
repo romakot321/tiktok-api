@@ -30,9 +30,9 @@ class StatsService:
             raise HTTPException(404)
         return StatsSchema.model_validate(stats)
 
-    async def get_increase(self, nickname: str, days: int) -> StatsUserSchema:
-        model = await self.stats_repository.get_increase(nickname, days)
-        return StatsUserSchema.model_validate(model)
+    async def get_increase(self, nickname: str, days: int) -> StatsSchema:
+        stats = await self.stats_repository.get_increase(nickname, days)
+        return StatsSchema.model_validate(stats)
 
     async def get_trend_videos(self) -> list[StatsTrendVideoSchema]:
         models = await self.stats_repository.get_trend_videos()
