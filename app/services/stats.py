@@ -8,7 +8,7 @@ from app.repositories.stats import StatsRepository
 from app.repositories.user import UserRepository
 from app.schemas.stats import StatsUserSchema, StatsSchema
 from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema, StatsTrendSongSchema
-from app.schemas.external import ExternalDataSchema
+from app.schemas.external import ExternalDataSchema, ExternalVideoDataSchema
 from app.db.base import get_session
 from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag, TrendSong
 
@@ -46,25 +46,25 @@ class StatsService:
         models = await self.stats_repository.get_trend_songs()
         return [StatsTrendSongSchema.model_validate(model) for model in models]
 
-    async def _save_user_stats(self, schema: ExternalDataSchema, created_at: dt.datetime):
+    async def _save_user_stats(self, schema: ExternalVideoDataSchema.AuthorMeta, created_at: dt.datetime):
         user_stats = UserStats(
-            followers=schema.userInfo.stats.followerCount,
-            following=schema.userInfo.stats.followingCount,
-            likes=schema.userInfo.stats.heartCount,
-            diggs=schema.userInfo.stats.diggCount,
-            nickname=schema.userInfo.user.uniqueId,
+            followers=schema.fans,
+            following=schema.following,
+            likes=schema.heart,
+            diggs=schema.digg,
+            nickname=schema.name,
             created_at=created_at
         )
         await self.stats_repository.store_user(user_stats)
-        await self.user_repository.update_avatar(user_stats.nickname, schema.userInfo.user.avatarMedium)
+        await self.user_repository.update_avatar(schema.name, schema.avatar)
 
-    async def _load_video_stats(self, nicknames: list[str], created_at: dt.datetime):
-        data = await self.external_repository.get_video_data(nicknames)
+    async def _load_video_stats(self, schemas: list[ExternalVideoDataSchema], created_at: dt.datetime):
         videos = [
             VideoStats(video_id=schema.id, views=schema.playCount, comments=schema.commentCount,
                        diggs=schema.diggCount, shares=schema.shareCount, nickname=schema.authorMeta.name,
                        created_at=created_at, cover_url=schema.videoMeta.originalCoverUrl, video_url=schema.mediaUrls[0])
-            for schema in data
+            for schema in schemas
+            if schema.id is not None
         ]
         [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
         await self.stats_repository.commit()
@@ -100,28 +100,6 @@ class StatsService:
         await self.stats_repository.commit()
 
     @classmethod
-    async def load_user_stats(cls, nickname: str):
-        session_getter = get_session()
-        db_session = await anext(session_getter)
-        self = cls(
-            external_repository=ExternalRepository(),
-            stats_repository=StatsRepository(session=db_session),
-            user_repository=UserRepository(session=db_session)
-        )
-
-        data = await self.external_repository.get_user_data([nickname])
-
-        now = dt.datetime.now()
-        [await self._save_user_stats(stats, now) for stats in data]
-        await self._load_video_stats([nickname], now)
-        logger.debug(f"Add {len(data)} stats")
-
-        try:
-            await anext(session_getter)
-        except StopAsyncIteration:
-            pass
-
-    @classmethod
     async def update_stats(cls):
         session_getter = get_session()
         db_session = await anext(session_getter)
@@ -136,11 +114,23 @@ class StatsService:
             nicknames = [user.nickname for user in users]
             now = dt.datetime.now()
 
-            data = await self.external_repository.get_user_data(nicknames)
-            [await self._save_user_stats(stats, now) for stats in data]
-            await self._load_video_stats(nicknames, now)
+            data = None
+            try:
+                data = await self.external_repository.get_video_data(nicknames)
+            except Exception as e:
+                logger.exception(e)
 
-            logger.debug(f"Add {len(data)} user stats")
+            if data is not None:
+                # Extract user data from video author
+                for nickname in nicknames:
+                    for schema in data:
+                        if schema.authorMeta.name != nickname:
+                            continue
+                        await self._save_user_stats(schema.authorMeta, now)
+                        break
+
+                await self._load_video_stats(data, now)
+                logger.debug(f"Add {len(data)} video stats")
 
         await self.stats_repository.clear_trend_videos()
         await self.stats_repository.clear_trend_hashtags()

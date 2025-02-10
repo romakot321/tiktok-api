@@ -31,7 +31,7 @@ class ExternalRepository:
                 f"https://api.apify.com/v2/acts/clockworks~tiktok-profile-scraper/run-sync-get-dataset-items?token={self.apify_token}",
                 json={
                     "profiles": nicknames,
-                    "resultsPerPage": 100,
+                    "resultsPerPage": 5,
                     "shouldDownloadVideos": True,
                     "profileScrapeSections": [
                         "videos"

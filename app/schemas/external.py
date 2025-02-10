@@ -7,14 +7,21 @@ class ExternalVideoDataSchema(BaseModel):
 
     class AuthorMeta(BaseModel):
         name: str
+        avatar: str
+        following: int
+        friends: int
+        fans: int
+        heart: int
+        video: int
+        digg: int
 
-    id: str
-    playCount: int
-    commentCount: int
-    diggCount: int
-    shareCount: int
-    mediaUrls: list[str]
-    videoMeta: VideoMeta
+    id: str | None = None
+    playCount: int | None = None
+    commentCount: int | None = None
+    diggCount: int | None = None
+    shareCount: int | None = None
+    mediaUrls: list[str] | None = None
+    videoMeta: VideoMeta | None = None
     authorMeta: AuthorMeta
 
     @model_validator(mode="before")
