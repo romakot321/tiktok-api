@@ -62,7 +62,7 @@ class StatsService:
         videos = [
             VideoStats(video_id=schema.id, views=schema.playCount, comments=schema.commentCount,
                        diggs=schema.diggCount, shares=schema.shareCount, nickname=schema.authorMeta.name,
-                       created_at=created_at, cover_url=schema.videoMeta.originalCoverUrl, video_url=schema.mediaUrls[0])
+                       created_at=created_at, cover_url=schema.videoMeta.originalCoverUrl, video_url=(schema.mediaUrls[0] if schema.mediaUrls else ''))
             for schema in schemas
             if schema.id is not None
         ]
