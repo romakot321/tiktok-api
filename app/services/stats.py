@@ -100,6 +100,29 @@ class StatsService:
         await self.stats_repository.commit()
 
     @classmethod
+    async def load_user_stats(cls, nickname: str):
+        session_getter = get_session()
+        db_session = await anext(session_getter)
+        self = cls(
+                external_repository=ExternalRepository(),
+                stats_repository=StatsRepository(session=db_session),
+                user_repository=UserRepository(session=db_session)
+        )
+        now = dt.datetime.now()
+
+        data = await self.external_repository.get_video_data([nickname])
+
+        # Extract user data from video author
+        for schema in data:
+            if schema.authorMeta.name != nickname:
+                continue
+            await self._save_user_stats(schema.authorMeta, now)
+            break
+
+        await self._load_video_stats(data, now)
+        logger.debug(f"Add {len(data)} video stats")
+
+    @classmethod
     async def update_stats(cls):
         session_getter = get_session()
         db_session = await anext(session_getter)
