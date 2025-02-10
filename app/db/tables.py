@@ -3,7 +3,7 @@ import uuid
 from uuid import UUID
 from enum import Enum
 
-from sqlalchemy import bindparam
+from sqlalchemy import BIGINT, bindparam
 from sqlalchemy import CheckConstraint
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -50,10 +50,10 @@ class User(BaseMixin, Base):
 
 
 class UserStats(BaseMixin, Base):
-    followers: M[int]
-    following: M[int]
-    likes: M[int]
-    diggs: M[int]
+    followers: M[int] = column(type_=BIGINT)
+    following: M[int] = column(type_=BIGINT)
+    likes: M[int] = column(type_=BIGINT)
+    diggs: M[int] = column(type_=BIGINT)
     nickname: M[str] = column(ForeignKey('users.nickname', ondelete="CASCADE"))
 
     user: M['User'] = relationship(back_populates='stats', lazy='noload')
@@ -61,10 +61,10 @@ class UserStats(BaseMixin, Base):
 
 class VideoStats(BaseMixin, Base):
     video_id: M[str]
-    views: M[int]
-    comments: M[int]
-    diggs: M[int]
-    shares: M[int]
+    views: M[int] = column(type_=BIGINT)
+    comments: M[int] = column(type_=BIGINT)
+    diggs: M[int] = column(type_=BIGINT)
+    shares: M[int] = column(type_=BIGINT)
     nickname: M[str] = column(ForeignKey('users.nickname', ondelete="CASCADE"))
     cover_url: M[str]
     video_url: M[str]
@@ -74,14 +74,14 @@ class VideoStats(BaseMixin, Base):
 
 class TrendVideo(BaseMixin, Base):
     cover_url: M[str]
-    views: M[int]
+    views: M[int] = column(type_=BIGINT)
     description: M[str]
     video_url: M[str]
 
 
 class TrendHashtag(BaseMixin, Base):
     name: M[str]
-    views: M[int]
+    views: M[int] = column(type_=BIGINT)
 
 
 class TrendSong(BaseMixin, Base):
