@@ -40,7 +40,8 @@ class ExternalRepository:
             )
             data = await resp.json()
         logger.debug(f"Loaded {len(data)} video")
-        return [ExternalVideoDataSchema.model_validate(row) for row in data]
+        logger.debug([row for row in data if row.get("error") is not None])
+        return [ExternalVideoDataSchema.model_validate(row) for row in data if row.get('error') is None]
 
     async def get_trend_hashtags_data(self) -> list[ExternalTrendHashtagDataSchema]:
         async with ClientSession() as session:
