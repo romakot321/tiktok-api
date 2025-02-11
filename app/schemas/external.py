@@ -8,12 +8,12 @@ class ExternalVideoDataSchema(BaseModel):
     class AuthorMeta(BaseModel):
         name: str
         avatar: str
-        following: int
-        friends: int
-        fans: int
-        heart: int
-        video: int
-        digg: int
+        following: int = 0
+        friends: int = 0
+        fans: int = 0
+        heart: int = 0
+        video: int = 0
+        digg: int = 0
 
     id: str | None = None
     playCount: int | None = None
@@ -22,7 +22,8 @@ class ExternalVideoDataSchema(BaseModel):
     shareCount: int | None = None
     mediaUrls: list[str] | None = None
     videoMeta: VideoMeta | None = None
-    authorMeta: AuthorMeta
+    authorMeta: AuthorMeta | None = None  # If error occured, all fields is null except error
+    error: str | None = None
 
     @model_validator(mode="before")
     @classmethod

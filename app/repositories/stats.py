@@ -77,7 +77,8 @@ class StatsRepository(BaseRepository):
             .where(first_record_subquery.c.rn == 1)
         )
         results = await self.session.scalars(final_query)
-        print([i.__dict__ for i in results])
+        print(results)
+        print([i for i in results])
 
         return results
 
@@ -93,10 +94,10 @@ class StatsRepository(BaseRepository):
         second_stats = await self.get_latest(nickname)
 
         return {
-            "followers": second_stats.followers - first_stats.followers,
-            "following": second_stats.following - first_stats.following,
-            "likes": second_stats.likes - first_stats.likes,
-            "diggs": second_stats.diggs - first_stats.diggs,
+            "followers": second_stats.user_stats.followers - first_stats.followers,
+            "following": second_stats.user_stats.following - first_stats.following,
+            "likes": second_stats.user_stats.likes - first_stats.likes,
+            "diggs": second_stats.user_stats.diggs - first_stats.diggs,
             "created_at": first_stats.created_at,
             "nickname": nickname
         }

@@ -41,6 +41,7 @@ class User(BaseMixin, Base):
     app_id: M[str] = column(primary_key=True)
     app_bundle: M[str]
     avatar: M[str | None] = column(nullable=True)
+    error: M[str | None] = column(nullable=True)
 
     stats: M[list['UserStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')
     video_stats: M[list['VideoStats']] = relationship(back_populates="user", lazy='noload', cascade='all, delete')

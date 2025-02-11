@@ -46,7 +46,10 @@ class StatsService:
         models = await self.stats_repository.get_trend_songs()
         return [StatsTrendSongSchema.model_validate(model) for model in models]
 
-    async def _save_user_stats(self, schema: ExternalVideoDataSchema.AuthorMeta, created_at: dt.datetime):
+    async def _save_user_stats(self, schema: ExternalVideoDataSchema.AuthorMeta, error: str | None, created_at: dt.datetime):
+        if error:
+            await self.user_repository.update(schema.name, error=error)
+            return
         user_stats = UserStats(
             followers=schema.fans,
             following=schema.following,
@@ -56,7 +59,7 @@ class StatsService:
             created_at=created_at
         )
         await self.stats_repository.store_user(user_stats)
-        await self.user_repository.update_avatar(schema.name, schema.avatar)
+        await self.user_repository.update(schema.name, avatar=schema.avatar)
 
     async def _load_video_stats(self, schemas: list[ExternalVideoDataSchema], created_at: dt.datetime):
         videos = [
@@ -114,9 +117,9 @@ class StatsService:
 
         # Extract user data from video author
         for schema in data:
-            if schema.authorMeta.name != nickname:
+            if schema.authorMeta is None or schema.authorMeta.name != nickname:
                 continue
-            await self._save_user_stats(schema.authorMeta, now)
+            await self._save_user_stats(schema.authorMeta, schema.error, now)
             break
 
         await self._load_video_stats(data, now)
@@ -134,7 +137,7 @@ class StatsService:
 
         users = await self.user_repository.list()
         if users:
-            nicknames = [user.nickname for user in users]
+            nicknames = [user.nickname for user in users if user.error is None]
             now = dt.datetime.now()
 
             data = None
@@ -147,9 +150,9 @@ class StatsService:
                 # Extract user data from video author
                 for nickname in nicknames:
                     for schema in data:
-                        if schema.authorMeta.name != nickname:
+                        if schema.authorMeta is None or schema.authorMeta.name != nickname:
                             continue
-                        await self._save_user_stats(schema.authorMeta, now)
+                        await self._save_user_stats(schema.authorMeta, schema.error, now)
                         break
 
                 await self._load_video_stats(data, now)

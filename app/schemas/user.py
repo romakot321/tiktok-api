@@ -5,6 +5,7 @@ class UserSchema(BaseModel):
     id: int
     nickname: str
     avatar: str | None = None
+    error: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
