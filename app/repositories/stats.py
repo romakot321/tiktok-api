@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from pydantic import BaseModel, ConfigDict
 import datetime as dt
 
@@ -33,6 +33,9 @@ class StatsRepository(BaseRepository):
         }
 
     async def get_increase_video(self, nickname: str, days: int) -> dict:
+        ago = (dt.datetime.now() - dt.timedelta(days=days))
+        ago = ago.replace(hour=0, minute=0, second=0)
+
         first_record_subquery = (
             select(
                 VideoStats.video_id,
@@ -42,7 +45,7 @@ class StatsRepository(BaseRepository):
                 VideoStats.shares,
                 func.row_number().over(partition_by=VideoStats.video_id, order_by=VideoStats.created_at).label('rn')
             )
-            .where(VideoStats.created_at < func.now() - func.interval(f'{days} days'))
+            .where(VideoStats.created_at < ago)
             .where(VideoStats.nickname == nickname)
         ).subquery()
 
@@ -76,11 +79,21 @@ class StatsRepository(BaseRepository):
             .where(latest_record_subquery.c.rn == 1)
             .where(first_record_subquery.c.rn == 1)
         )
-        results = await self.session.scalars(final_query)
-        print(results)
-        print([i for i in results])
+        results = (await self.session.execute(final_query)).fetchall()
 
-        return results
+        return [
+            {
+                "video_id": row[0],
+                "video_url": row[1],
+                "cover_url": row[2],
+                "nickname": row[3],
+                "views": row[4],
+                "comments": row[5],
+                "diggs": row[6],
+                "shares": row[7]
+            }
+            for row in results
+        ]
 
     async def get_increase_user(self, nickname: str, days: int) -> dict:
         ago = (dt.datetime.now() - dt.timedelta(days=days))
