@@ -58,6 +58,7 @@ class StatsService:
             nickname=schema.name,
             created_at=created_at
         )
+        logger.debug(schema.avatar)
         await self.stats_repository.store_user(user_stats)
         await self.user_repository.update(schema.name, avatar=schema.avatar)
 

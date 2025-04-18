@@ -42,13 +42,11 @@ class ExternalRepository:
         logger.debug(f"Loaded {len(data)} video")
         logger.debug([row for row in data if row.get("error") is not None])
         return [
-            ExternalVideoDataSchema.model_validate(row)
+            (ExternalVideoDataSchema.model_validate(row) if row.get('error') is None else ExternalVideoDataSchema(
+                error=row.get('error'),
+                authorMeta=ExternalVideoDataSchema.AuthorMeta(name=row.get("input", ''), avatar='')
+            ))
             for row in data
-            if row.get('error') is None
-                else ExternalVideoDataSchema(
-                    error=row.get('error'),
-                    authorMeta=ExternalVideoDataSchema.AuthorMeta(name=row.get("input", ''), avatar='')
-                )
         ]
 
     async def get_trend_hashtags_data(self) -> list[ExternalTrendHashtagDataSchema]:
