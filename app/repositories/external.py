@@ -55,7 +55,7 @@ class ExternalRepository:
         async with ClientSession() as session:
             resp = await session.post(
                 f"https://api.apify.com/v2/acts/lexis-solutions~tiktok-trending-hashtags-scraper/run-sync-get-dataset-items?token={self.apify_token}",
-                json={ "countryCode": "US", "maxItems": 30, "period": "7" }
+                json={"period": "30", "countryCode": "US", "maxItems": 50}
             )
             data = await resp.json()
         logger.debug(f"Loaded {len(data)} hashtags")
@@ -74,8 +74,8 @@ class ExternalRepository:
     async def get_trend_songs_data(self) -> list[ExternalTrendSongDataSchema]:
         async with ClientSession() as session:
             resp = await session.post(
-                f"https://api.apify.com/v2/acts/lexis-solutions~tiktok-trending-songs-scraper/run-sync-get-dataset-items?token={self.apify_token}",
-                json={ "maxItems": 20, "countryCode": "US", "period": "7" }
+                f"https://api.apify.com/v2/acts/codebyte~tiktok-trending-songs-analytics/run-sync-get-dataset-items?token={self.apify_token}",
+                json={"result_type": "top100", "top100_commercial_music": False, "top100_new_on_board": False, "country": "US", "period": "7", "top100_rank_type": "popular"}
             )
             data = await resp.json()
         logger.debug(f"Loaded {len(data)} songs")

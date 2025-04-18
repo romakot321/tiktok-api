@@ -86,6 +86,8 @@ class ExternalTrendVideoDataSchema(BaseModel):
 class ExternalTrendHashtagDataSchema(BaseModel):
     hashtag_name: str
     video_views: int
+    publish_cnt: int
+    rank: int
 
 
 class ExternalTrendSongDataSchema(BaseModel):
@@ -93,4 +95,5 @@ class ExternalTrendSongDataSchema(BaseModel):
     link: str
     title: str
     author: str
+    rank: int
 
