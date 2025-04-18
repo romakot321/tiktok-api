@@ -7,7 +7,11 @@ from app.repositories.external import ExternalRepository
 from app.repositories.stats import StatsRepository
 from app.repositories.user import UserRepository
 from app.schemas.stats import StatsUserSchema, StatsSchema
-from app.schemas.stats import StatsTrendVideoSchema, StatsTrendHashtagSchema, StatsTrendSongSchema
+from app.schemas.stats import (
+    StatsTrendVideoSchema,
+    StatsTrendHashtagSchema,
+    StatsTrendSongSchema,
+)
 from app.schemas.external import ExternalDataSchema, ExternalVideoDataSchema
 from app.db.base import get_session
 from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag, TrendSong
@@ -15,10 +19,10 @@ from app.db.tables import UserStats, VideoStats, TrendVideo, TrendHashtag, Trend
 
 class StatsService:
     def __init__(
-            self,
-            external_repository: ExternalRepository = Depends(),
-            stats_repository: StatsRepository = Depends(),
-            user_repository: UserRepository = Depends()
+        self,
+        external_repository: ExternalRepository = Depends(),
+        stats_repository: StatsRepository = Depends(),
+        user_repository: UserRepository = Depends(),
     ):
         self.external_repository = external_repository
         self.stats_repository = stats_repository
@@ -46,7 +50,12 @@ class StatsService:
         models = await self.stats_repository.get_trend_songs()
         return [StatsTrendSongSchema.model_validate(model) for model in models]
 
-    async def _save_user_stats(self, schema: ExternalVideoDataSchema.AuthorMeta, error: str | None, created_at: dt.datetime):
+    async def _save_user_stats(
+        self,
+        schema: ExternalVideoDataSchema.AuthorMeta,
+        error: str | None,
+        created_at: dt.datetime,
+    ):
         if error:
             await self.user_repository.update(schema.name, error=error)
             return
@@ -56,51 +65,80 @@ class StatsService:
             likes=schema.heart,
             diggs=schema.digg,
             nickname=schema.name,
-            created_at=created_at
+            created_at=created_at,
         )
         logger.debug(schema.avatar)
         await self.stats_repository.store_user(user_stats)
         await self.user_repository.update(schema.name, avatar=schema.avatar)
 
-    async def _load_video_stats(self, schemas: list[ExternalVideoDataSchema], created_at: dt.datetime):
+    async def _load_video_stats(
+        self, schemas: list[ExternalVideoDataSchema], created_at: dt.datetime
+    ):
         videos = [
-            VideoStats(video_id=schema.id, views=schema.playCount, comments=schema.commentCount,
-                       diggs=schema.diggCount, shares=schema.shareCount, nickname=schema.authorMeta.name,
-                       created_at=created_at, cover_url=schema.videoMeta.originalCoverUrl, video_url=(schema.mediaUrls[0] if schema.mediaUrls else ''))
+            VideoStats(
+                video_id=schema.id,
+                views=schema.playCount,
+                comments=schema.commentCount,
+                diggs=schema.diggCount,
+                shares=schema.shareCount,
+                nickname=schema.authorMeta.name,
+                created_at=created_at,
+                cover_url=schema.videoMeta.originalCoverUrl,
+                video_url=(schema.mediaUrls[0] if schema.mediaUrls else ""),
+            )
             for schema in schemas
             if schema.id is not None
         ]
-        [await self.stats_repository.store_video(video, do_commit=False) for video in videos]
+        [
+            await self.stats_repository.store_video(video, do_commit=False)
+            for video in videos
+        ]
         await self.stats_repository.commit()
 
     async def _load_trend_video(self):
         videos = await self.external_repository.get_trend_videos_data()
         models = [
-            TrendVideo(description=video.desc, video_url=video.share_url,
-                       cover_url=video.video.cover.url_list[0], views=video.statistics.play_count)
+            TrendVideo(
+                description=video.desc,
+                video_url=video.share_url,
+                cover_url=video.video.cover.url_list[0],
+                views=video.statistics.play_count,
+            )
             for video in videos
         ]
-        [await self.stats_repository.store_trend_video(model, do_commit=False) for model in models]
+        [
+            await self.stats_repository.store_trend_video(model, do_commit=False)
+            for model in models
+        ]
         await self.stats_repository.commit()
 
     async def _load_trend_hashtags(self):
-        return  # TODO: Remove when connected
         hashtags = await self.external_repository.get_trend_hashtags_data()
         models = [
             TrendHashtag(name=hashtag.hashtag_name, views=hashtag.video_views)
             for hashtag in hashtags
         ]
-        [await self.stats_repository.store_trend_hashtag(model, do_commit=False) for model in models]
+        [
+            await self.stats_repository.store_trend_hashtag(model, do_commit=False)
+            for model in models
+        ]
         await self.stats_repository.commit()
 
     async def _load_trend_songs(self):
-        return  # TODO: Remove when connected
         songs = await self.external_repository.get_trend_songs_data()
         models = [
-            TrendSong(cover_url=song.cover, song_url=song.link, title=song.title, author=song.author)
+            TrendSong(
+                cover_url=song.cover,
+                song_url=song.link,
+                title=song.title,
+                author=song.author,
+            )
             for song in songs
         ]
-        [await self.stats_repository.store_trend_song(model, do_commit=False) for model in models]
+        [
+            await self.stats_repository.store_trend_song(model, do_commit=False)
+            for model in models
+        ]
         await self.stats_repository.commit()
 
     @classmethod
@@ -108,9 +146,9 @@ class StatsService:
         session_getter = get_session()
         db_session = await anext(session_getter)
         self = cls(
-                external_repository=ExternalRepository(),
-                stats_repository=StatsRepository(session=db_session),
-                user_repository=UserRepository(session=db_session)
+            external_repository=ExternalRepository(),
+            stats_repository=StatsRepository(session=db_session),
+            user_repository=UserRepository(session=db_session),
         )
         now = dt.datetime.now()
 
@@ -131,9 +169,9 @@ class StatsService:
         session_getter = get_session()
         db_session = await anext(session_getter)
         self = cls(
-                external_repository=ExternalRepository(),
-                stats_repository=StatsRepository(session=db_session),
-                user_repository=UserRepository(session=db_session)
+            external_repository=ExternalRepository(),
+            stats_repository=StatsRepository(session=db_session),
+            user_repository=UserRepository(session=db_session),
         )
 
         users = await self.user_repository.list()
@@ -151,9 +189,14 @@ class StatsService:
                 # Extract user data from video author
                 for nickname in nicknames:
                     for schema in data:
-                        if schema.authorMeta is None or schema.authorMeta.name != nickname:
+                        if (
+                            schema.authorMeta is None
+                            or schema.authorMeta.name != nickname
+                        ):
                             continue
-                        await self._save_user_stats(schema.authorMeta, schema.error, now)
+                        await self._save_user_stats(
+                            schema.authorMeta, schema.error, now
+                        )
                         break
 
                 await self._load_video_stats(data, now)
@@ -170,4 +213,3 @@ class StatsService:
             await anext(session_getter)
         except StopAsyncIteration:
             pass
-
