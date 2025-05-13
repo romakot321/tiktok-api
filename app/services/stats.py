@@ -166,6 +166,7 @@ class StatsService:
 
     @classmethod
     async def update_stats(cls):
+        logger.info("Update statistics started")
         session_getter = get_session()
         db_session = await anext(session_getter)
         self = cls(
@@ -205,10 +206,15 @@ class StatsService:
         await self.stats_repository.clear_trend_videos()
         await self.stats_repository.clear_trend_hashtags()
         await self.stats_repository.clear_trend_songs()
+        logger.info("Cleared trend data")
+        logger.info("Loading trend videos...")
         await self._load_trend_video()
+        logger.info("Loading trend hashtags...")
         await self._load_trend_hashtags()
+        logger.info("Loading trend songs...")
         await self._load_trend_songs()
 
+        logger.info("Update statistics finished")
         try:
             await anext(session_getter)
         except StopAsyncIteration:
